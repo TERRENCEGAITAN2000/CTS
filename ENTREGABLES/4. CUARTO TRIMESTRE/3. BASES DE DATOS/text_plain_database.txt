@@ -1,0 +1,206 @@
+drop database if exists CTS;
+create database CTS character set utf8mb4;
+use CTS;
+
+
+
+
+SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
+
+
+DROP SCHEMA IF EXISTS `CTS` ;
+
+
+CREATE SCHEMA IF NOT EXISTS `CTS` DEFAULT CHARACTER SET utf8 ;
+USE `CTS` ;
+
+DROP TABLE IF EXISTS `CTS`.`Tipo_Requerimiento` ;
+
+CREATE TABLE IF NOT EXISTS `CTS`.`Tipo_Requerimiento` (
+  `idTipo_Requerimiento` INT NOT NULL AUTO_INCREMENT,
+  `tipo_Requerimiento` ENUM('mantenimiento preventivo', 'mantenimiento correctivo', 'mantenimiento predictivo', 'mantenimiento de hardware', 'mantenimiento de software') NOT NULL,
+  PRIMARY KEY (`idTipo_Requerimiento`))
+ENGINE = InnoDB;
+
+DROP TABLE IF EXISTS `CTS`.`Estado` ;
+
+CREATE TABLE IF NOT EXISTS `CTS`.`Estado` (
+  `idEstado` INT NOT NULL AUTO_INCREMENT,
+  `estado` ENUM('abierto', 'cerrado', 'en proceso', 'sin asignar') NOT NULL,
+  PRIMARY KEY (`idEstado`))
+ENGINE = InnoDB;
+
+DROP TABLE IF EXISTS `CTS`.`Tipo_Documento` ;
+
+CREATE TABLE IF NOT EXISTS `CTS`.`Tipo_Documento` (
+  `idTipo_Documento` INT NOT NULL AUTO_INCREMENT,
+  `documento` ENUM('cedula ciudadania', 'cedula de extranjeria') NULL,
+  PRIMARY KEY (`idTipo_Documento`))
+ENGINE = InnoDB;
+
+DROP TABLE IF EXISTS `CTS`.`Equipo` ;
+
+CREATE TABLE IF NOT EXISTS `CTS`.`Equipo` (
+  `idEquipo` INT NOT NULL,
+  `marca` VARCHAR(45) NOT NULL,
+  `modelo` VARCHAR(45) NOT NULL,
+  `serial` VARCHAR(45) NOT NULL,
+  `caracteristicas` LONGTEXT NOT NULL,
+  PRIMARY KEY (`idEquipo`),
+  UNIQUE INDEX `idEquipo_UNIQUE` (`idEquipo` ASC) VISIBLE)
+ENGINE = InnoDB;
+
+DROP TABLE IF EXISTS `CTS`.`Cliente` ;
+
+CREATE TABLE IF NOT EXISTS `CTS`.`Cliente` (
+  `idCliente` INT NOT NULL AUTO_INCREMENT,
+  `nombres` VARCHAR(45) NOT NULL,
+  `apellidos` VARCHAR(45) NOT NULL,
+  `num_Doc` INT(20) NOT NULL,
+  `telefono` VARCHAR(45) NOT NULL,
+  `correo` VARCHAR(45) NOT NULL,
+  `Tipo_Documento_idTipo_Documento` INT NOT NULL,
+  `Equipo_idEquipo` INT NOT NULL,
+  PRIMARY KEY (`idCliente`),
+  UNIQUE INDEX `correo_UNIQUE` (`correo` ASC) VISIBLE,
+  INDEX `fk_Cliente_Tipo_Documento1_idx` (`Tipo_Documento_idTipo_Documento` ASC) VISIBLE,
+  INDEX `fk_Cliente_Equipo1_idx` (`Equipo_idEquipo` ASC) VISIBLE,
+  CONSTRAINT `fk_Cliente_Tipo_Documento1`
+    FOREIGN KEY (`Tipo_Documento_idTipo_Documento`)
+    REFERENCES `CTS`.`Tipo_Documento` (`idTipo_Documento`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_Cliente_Equipo1`
+    FOREIGN KEY (`Equipo_idEquipo`)
+    REFERENCES `CTS`.`Equipo` (`idEquipo`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+DROP TABLE IF EXISTS `CTS`.`Requerimientos` ;
+
+CREATE TABLE IF NOT EXISTS `CTS`.`Requerimientos` (
+  `idRequerimientos` INT NOT NULL AUTO_INCREMENT,
+  `descripcion_Requerimiento` LONGTEXT NOT NULL,
+  `Tipo_Requerimiento_idTipo_Requerimiento` INT NOT NULL,
+  `Estado_idEstado` INT NOT NULL,
+  `Cliente_idCliente` INT NOT NULL,
+  PRIMARY KEY (`idRequerimientos`),
+  INDEX `fk_Requerimientos_Tipo_Requerimiento_idx` (`Tipo_Requerimiento_idTipo_Requerimiento` ASC) VISIBLE,
+  INDEX `fk_Requerimientos_Estado1_idx` (`Estado_idEstado` ASC) VISIBLE,
+  INDEX `fk_Requerimientos_Cliente1_idx` (`Cliente_idCliente` ASC) VISIBLE,
+  CONSTRAINT `fk_Requerimientos_Tipo_Requerimiento`
+    FOREIGN KEY (`Tipo_Requerimiento_idTipo_Requerimiento`)
+    REFERENCES `CTS`.`Tipo_Requerimiento` (`idTipo_Requerimiento`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_Requerimientos_Estado1`
+    FOREIGN KEY (`Estado_idEstado`)
+    REFERENCES `CTS`.`Estado` (`idEstado`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_Requerimientos_Cliente1`
+    FOREIGN KEY (`Cliente_idCliente`)
+    REFERENCES `CTS`.`Cliente` (`idCliente`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+DROP TABLE IF EXISTS `CTS`.`Ticket` ;
+
+CREATE TABLE IF NOT EXISTS `CTS`.`Ticket` (
+  `idTicket` INT NOT NULL AUTO_INCREMENT,
+  `fechaCreacion` DATE NOT NULL,
+  `horaCreacion` TIME NOT NULL,
+  `Requerimientos_idRequerimientos` INT NOT NULL,
+  PRIMARY KEY (`idTicket`),
+  INDEX `fk_Ticket_Requerimientos1_idx` (`Requerimientos_idRequerimientos` ASC) VISIBLE,
+  CONSTRAINT `fk_Ticket_Requerimientos1`
+    FOREIGN KEY (`Requerimientos_idRequerimientos`)
+    REFERENCES `CTS`.`Requerimientos` (`idRequerimientos`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+DROP TABLE IF EXISTS `CTS`.`HOJA_VIDA` ;
+
+CREATE TABLE IF NOT EXISTS `CTS`.`HOJA_VIDA` (
+  `idHOJA_VIDA` INT NOT NULL AUTO_INCREMENT,
+  `descripcion_Mantenimiento` LONGTEXT NOT NULL,
+  `caracteristicas_hardware` LONGTEXT NOT NULL,
+  `caracteristicas_software` LONGTEXT NOT NULL,
+  `observaciones` LONGTEXT NOT NULL,
+  `fecha_mantenimiento` DATE NOT NULL,
+  `Equipo_idEquipo` INT NOT NULL,
+  PRIMARY KEY (`idHOJA_VIDA`),
+  UNIQUE INDEX `idHOJA_VIDA_UNIQUE` (`idHOJA_VIDA` ASC) VISIBLE,
+  INDEX `fk_HOJA_VIDA_Equipo1_idx` (`Equipo_idEquipo` ASC) VISIBLE,
+  CONSTRAINT `fk_HOJA_VIDA_Equipo1`
+    FOREIGN KEY (`Equipo_idEquipo`)
+    REFERENCES `CTS`.`Equipo` (`idEquipo`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+DROP TABLE IF EXISTS `CTS`.`Perfiles` ;
+
+CREATE TABLE IF NOT EXISTS `CTS`.`Perfiles` (
+  `idPerfiles` INT NOT NULL,
+  `nombre_usuario` VARCHAR(45) NOT NULL,
+  `contraseña_usuario` VARCHAR(45) NOT NULL,
+  PRIMARY KEY (`idPerfiles`),
+  UNIQUE INDEX `nombre_usuario_UNIQUE` (`nombre_usuario` ASC) VISIBLE,
+  UNIQUE INDEX `idPerfiles_UNIQUE` (`idPerfiles` ASC) VISIBLE)
+ENGINE = InnoDB;
+
+DROP TABLE IF EXISTS `CTS`.`Tipo_usuario` ;
+
+CREATE TABLE IF NOT EXISTS `CTS`.`Tipo_usuario` (
+  `idTipo_usuario` INT NOT NULL,
+  `nombre_usuario` VARCHAR(45) NOT NULL,
+  PRIMARY KEY (`idTipo_usuario`),
+  UNIQUE INDEX `idTipo_usuario_UNIQUE` (`idTipo_usuario` ASC) VISIBLE,
+  UNIQUE INDEX `nombre_usuario_UNIQUE` (`nombre_usuario` ASC) VISIBLE)
+ENGINE = InnoDB;
+
+DROP TABLE IF EXISTS `CTS`.`Usuarios` ;
+
+CREATE TABLE IF NOT EXISTS `CTS`.`Usuarios` (
+  `idUsuarios` INT NOT NULL,
+  `nombres` VARCHAR(45) NOT NULL,
+  `apellidos` VARCHAR(45) NOT NULL,
+  `num_Doc` VARCHAR(45) NOT NULL,
+  `telefono` INT(20) NOT NULL,
+  `correo` VARCHAR(45) NOT NULL,
+  `Tipo_Documento_idTipo_Documento` INT NOT NULL,
+  `Perfiles_idPerfiles` INT NOT NULL,
+  `Tipo_usuario_idTipo_usuario` INT NOT NULL,
+  PRIMARY KEY (`idUsuarios`),
+  UNIQUE INDEX `idUsuarios_UNIQUE` (`idUsuarios` ASC) VISIBLE,
+  UNIQUE INDEX `correo_UNIQUE` (`correo` ASC) VISIBLE,
+  INDEX `fk_Usuarios_Tipo_Documento1_idx` (`Tipo_Documento_idTipo_Documento` ASC) VISIBLE,
+  INDEX `fk_Usuarios_Perfiles1_idx` (`Perfiles_idPerfiles` ASC) VISIBLE,
+  INDEX `fk_Usuarios_Tipo_usuario1_idx` (`Tipo_usuario_idTipo_usuario` ASC) VISIBLE,
+  CONSTRAINT `fk_Usuarios_Tipo_Documento1`
+    FOREIGN KEY (`Tipo_Documento_idTipo_Documento`)
+    REFERENCES `CTS`.`Tipo_Documento` (`idTipo_Documento`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_Usuarios_Perfiles1`
+    FOREIGN KEY (`Perfiles_idPerfiles`)
+    REFERENCES `CTS`.`Perfiles` (`idPerfiles`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_Usuarios_Tipo_usuario1`
+    FOREIGN KEY (`Tipo_usuario_idTipo_usuario`)
+    REFERENCES `CTS`.`Tipo_usuario` (`idTipo_usuario`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+
+SET SQL_MODE=@OLD_SQL_MODE;
+SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
